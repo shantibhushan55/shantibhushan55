@@ -2,6 +2,8 @@ package com.waisl.keycloak.service;
 
 import com.waisl.keycloak.entity.Employee;
 import com.waisl.keycloak.repository.EmployeeRepository;
+import com.waisl.keycloak.utils.AesUtil;
+import jakarta.annotation.PostConstruct;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -12,7 +14,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
-import javax.annotation.PostConstruct;
+
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -41,9 +43,9 @@ public class EmployeeService {
     public void initializeEmployeeTable() {
         employeeRepository.saveAll(
                 Stream.of(
-                        new Employee("john", 20000),
-                        new Employee("mak", 55000),
-                        new Employee("peter", 120000)
+                        new Employee("shanti", 20000),
+                        new Employee("bhushan", 55000),
+                        new Employee("ravi", 120000)
                 ).collect(Collectors.toList()));
     }
 
@@ -58,48 +60,46 @@ public class EmployeeService {
                 .findAll();
     }
     public  ResponseEntity<String>  getToken(String username,String password) throws Exception{
-        String urlParameters  = "grant_type=password&username=shanti&password=shanti123&client_id=springboot-keycloak" +
-                "&scope=openid";
-        byte[] postData = urlParameters.getBytes( StandardCharsets.UTF_8 );
-//
+
         RestTemplate restTemplate = new RestTemplate();
         String url = "http://localhost:8080/realms/waisl/protocol/openid-connect/token";
+        AesUtil aesUtil= new AesUtil(128,1000);
+        String decryptedPassword = aesUtil.decrypt(password);
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-//
         MultiValueMap<String, String> map= new LinkedMultiValueMap<String, String>();
         map.add("username", username);
-        map.add("password", password);
+        map.add("password", decryptedPassword);
         map.add("grant_type", "password");
-        map.add("client_id", "springboot-keycloak");
+        map.add("client_id", "springboot-keycloak-main");
         map.add("scope", "openid");
+        //map.add("client_secret", "4MXAbsEwygUzj6ZhqmsIny9BAkWEYBg0");
+//        map.add("public-client", "true");
+//        map.add("bearer-only", "true");
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
 
-        ResponseEntity<String> response = restTemplate.postForEntity( url, request, String.class );
-
-        return response;
+        return restTemplate.postForEntity( url, request, String.class );
     }
 
     public  ResponseEntity<String>  getTokenDocker(String username,String password) throws Exception{
 
         RestTemplate restTemplate = new RestTemplate();
         String url = "http://keycloak:8080/realms/waisl/protocol/openid-connect/token";
-
+        AesUtil aesUtil= new AesUtil(128,1000);
+        String decryptedPassword = aesUtil.decrypt(password);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
         MultiValueMap<String, String> map= new LinkedMultiValueMap<String, String>();
         map.add("username", username);
-        map.add("password", password);
+        map.add("password", decryptedPassword);
         map.add("grant_type", "password");
         map.add("client_id", "springboot-keycloak");
         map.add("scope", "openid");
 
         HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<MultiValueMap<String, String>>(map, headers);
 
-        ResponseEntity<String> response = restTemplate.postForEntity( url, request, String.class );
-
-        return response;
+        return restTemplate.postForEntity( url, request, String.class );
     }
 }
